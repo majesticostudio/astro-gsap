@@ -1,87 +1,62 @@
 import gsap from "gsap";
 
-/**
- * A cache of timelines
- */
-export const timelines: {
-	[key: string]: gsap.core.Timeline;
-} = {};
+type Timeline = gsap.core.Timeline;
+type TimelineOptions = Omit<gsap.TimelineVars, "paused">;
+
+const pool = new Set<Timeline>();
 
 /**
- * Create a new timeline and add it to the cache
+ * Create a new paused timeline.
  * @param key
  * @param timelineOptions
  * @returns
  */
-export function createTimeline(
-	key: string,
-	timelineOptions?: gsap.TimelineVars,
-) {
-	if (timelineOptions) {
-		timelineOptions.paused = true;
-	}
-	const newTimeline = gsap.timeline(timelineOptions);
-	timelines[key] = newTimeline;
+export function createTimeline(timelineOptions?: TimelineOptions): Timeline {
+	const newTimeline = gsap.timeline({
+		...timelineOptions,
+		paused: true,
+	});
 	return newTimeline;
 }
 
 /**
- * Get the timeline from the cache if it exists, otherwise create a new one
+ * Get a timeline from the pool or create a new one if the pool is empty.
  * @param key
  * @param timelineOptions
  * @returns
  */
-export function useTimeline(
-	key: string,
-	timelineOptions?: gsap.TimelineVars,
-): gsap.core.Timeline {
-	// Here take the timeline from the cache if it exists, otherwise create a new one
-	const timeline: gsap.core.Timeline =
-		timelines[key] ?? createTimeline(key, timelineOptions);
+export function useTimeline(timelineOptions?: TimelineOptions): Timeline {
+	const poolNext = pool.values().next();
 
-	let clearAdded = false;
-
-	const handler: ProxyHandler<gsap.core.Timeline> = {
-		get(
-			target: gsap.core.Timeline,
-			prop: PropertyKey,
-			receiver: unknown,
-		): unknown {
-			const origMethod = target[prop as keyof gsap.core.Timeline];
-			if (typeof origMethod === "function") {
-				return (...args: unknown[]) => {
-					if (!clearAdded) {
-						target.clear();
-						clearAdded = true;
-					}
-					const result = origMethod.apply(target, args);
-
-					if (prop === "play") {
-						clearAdded = false;
-					}
-
-					// Ensure the proxy maintains the correct this context
-					return result === target ? receiver : result;
-				};
-			}
-			return origMethod;
-		},
-	};
-
-	return new Proxy(timeline, handler);
-}
-
-export function generateKeyForElement(element: Element) {
-	const str = element.outerHTML; // Using outerHTML to get a full string representation of the element
-	let hash = 0;
-
-	for (let i = 0; i < str.length; i++) {
-		const char = str.charCodeAt(i);
-		hash = (hash << 5) - hash + char; // Bitwise operations to mix the input string's characters
-		hash |= 0; // Convert to a 32bit integer
+	if (poolNext.done) {
+		// Pool is empty
+		return createTimeline(timelineOptions);
 	}
 
-	// Converting the hash to a base-36 string and ensuring it's a positive value
-	const hashedString = Math.abs(hash).toString(36).substring(0, 20);
-	return hashedString;
+	const timeline = poolNext.value;
+	// Remove from the pool
+	pool.delete(timeline);
+	return timeline;
+}
+
+export function addToPool(timeline: Timeline) {
+	timeline.pause();
+	// Clear as soon as the timeline is finished so animations don't remain on memory
+	timeline.clear();
+	pool.add(timeline);
+}
+
+/**
+ * Run a function with a Timeline from the pool.
+ *
+ * The timeline is added back to the pool once it's finished.
+ */
+export function withTimeline(fn: (timeline: Timeline) => void) {
+	const timeline = useTimeline();
+	fn(timeline);
+	if (timeline.isActive()) {
+		timeline.then(() => addToPool(timeline));
+	} else {
+		addToPool(timeline);
+	}
 }
