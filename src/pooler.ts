@@ -1,16 +1,31 @@
 import gsap from "gsap";
 
 type Timeline = gsap.core.Timeline;
+type TimelineOptions = Omit<gsap.TimelineVars, "paused">;
 
 const pool = new Set<Timeline>();
 
-export function createTimeline(timelineOptions?: gsap.TimelineVars): Timeline {
-	const newTimeline = gsap.timeline(timelineOptions);
-	newTimeline.pause();
+/**
+ * Create a new paused timeline.
+ * @param key
+ * @param timelineOptions
+ * @returns
+ */
+export function createTimeline(timelineOptions?: TimelineOptions): Timeline {
+	const newTimeline = gsap.timeline({
+		...timelineOptions,
+		paused: true,
+	});
 	return newTimeline;
 }
 
-export function useTimeline(timelineOptions?: gsap.TimelineVars): Timeline {
+/**
+ * Get a timeline from the pool or create a new one if the pool is empty.
+ * @param key
+ * @param timelineOptions
+ * @returns
+ */
+export function useTimeline(timelineOptions?: TimelineOptions): Timeline {
 	const poolNext = pool.values().next();
 
 	if (poolNext.done) {
