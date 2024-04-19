@@ -1,6 +1,6 @@
 import gsap from "gsap";
 
-export const gsapTimelines: {
+export const timelines: {
 	[key: string]: gsap.core.Timeline;
 } = {};
 
@@ -10,25 +10,29 @@ export function createTimeline(
 ) {
 	const newTimeline = gsap.timeline(timelineOptions);
 	newTimeline.paused(true);
-	gsapTimelines[key] = newTimeline;
+	timelines[key] = newTimeline;
 	return newTimeline;
 }
 
-export function loadTimeline(
+export function useTimeline(
 	key: string,
 	timelineOptions?: gsap.TimelineVars,
 ): gsap.core.Timeline {
 	// Here take the timeline from the cache if it exists, otherwise create a new one
 	const timeline: gsap.core.Timeline =
-		gsapTimelines[key] ?? createTimeline(key, timelineOptions);
+		timelines[key] ?? createTimeline(key, timelineOptions);
 
 	let clearAdded = false;
 
 	const handler: ProxyHandler<gsap.core.Timeline> = {
-		get(target: gsap.core.Timeline, prop: PropertyKey, receiver: any): any {
+		get(
+			target: gsap.core.Timeline,
+			prop: PropertyKey,
+			receiver: unknown,
+		): unknown {
 			const origMethod = target[prop as keyof gsap.core.Timeline];
 			if (typeof origMethod === "function") {
-				return (...args: any[]) => {
+				return (...args: unknown[]) => {
 					if (!clearAdded) {
 						target.clear();
 						clearAdded = true;

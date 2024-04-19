@@ -1,6 +1,6 @@
 {
 	"name": "gsap-timeline-pooler",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "A pooler for handling GSAP Timelines for astro view transitions",
 	"main": "index.ts",
 	"types": "index.ts",
