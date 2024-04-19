@@ -4,19 +4,9 @@ type Timeline = gsap.core.Timeline;
 
 const pool = new Set<Timeline>();
 
-function addTimelineToPoolOnceCompleted(timeline: Timeline) {
-	timeline.then(() => {
-		timeline.pause();
-		// Clear as soon as the timeline is finished so animations don't remain on memory
-		timeline.clear();
-		pool.add(timeline);
-	});
-}
-
 export function createTimeline(timelineOptions?: gsap.TimelineVars): Timeline {
 	const newTimeline = gsap.timeline(timelineOptions);
 	newTimeline.pause();
-	addTimelineToPoolOnceCompleted(newTimeline);
 	return newTimeline;
 }
 
@@ -31,6 +21,27 @@ export function useTimeline(timelineOptions?: gsap.TimelineVars): Timeline {
 	const timeline = poolNext.value;
 	// Remove from the pool
 	pool.delete(timeline);
-	addTimelineToPoolOnceCompleted(timeline);
 	return timeline;
+}
+
+export function addToPool(timeline: Timeline) {
+	timeline.pause();
+	// Clear as soon as the timeline is finished so animations don't remain on memory
+	timeline.clear();
+	pool.add(timeline);
+}
+
+/**
+ * Run a function with a Timeline from the pool.
+ *
+ * The timeline is added back to the pool once it's finished.
+ */
+export function withTimeline(fn: (timeline: Timeline) => void) {
+	const timeline = useTimeline();
+	fn(timeline);
+	if (timeline.isActive()) {
+		timeline.then(() => addToPool(timeline));
+	} else {
+		addToPool(timeline);
+	}
 }
