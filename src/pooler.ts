@@ -1,19 +1,36 @@
 import gsap from "gsap";
 
+/**
+ * A cache of timelines
+ */
 export const timelines: {
 	[key: string]: gsap.core.Timeline;
 } = {};
 
+/**
+ * Create a new timeline and add it to the cache
+ * @param key
+ * @param timelineOptions
+ * @returns
+ */
 export function createTimeline(
 	key: string,
 	timelineOptions?: gsap.TimelineVars,
 ) {
+	if (timelineOptions) {
+		timelineOptions.paused = true;
+	}
 	const newTimeline = gsap.timeline(timelineOptions);
-	newTimeline.paused(true);
 	timelines[key] = newTimeline;
 	return newTimeline;
 }
 
+/**
+ * Get the timeline from the cache if it exists, otherwise create a new one
+ * @param key
+ * @param timelineOptions
+ * @returns
+ */
 export function useTimeline(
 	key: string,
 	timelineOptions?: gsap.TimelineVars,
@@ -52,4 +69,19 @@ export function useTimeline(
 	};
 
 	return new Proxy(timeline, handler);
+}
+
+export function generateKeyForElement(element: Element) {
+	const str = element.outerHTML; // Using outerHTML to get a full string representation of the element
+	let hash = 0;
+
+	for (let i = 0; i < str.length; i++) {
+		const char = str.charCodeAt(i);
+		hash = (hash << 5) - hash + char; // Bitwise operations to mix the input string's characters
+		hash |= 0; // Convert to a 32bit integer
+	}
+
+	// Converting the hash to a base-36 string and ensuring it's a positive value
+	const hashedString = Math.abs(hash).toString(36).substring(0, 20);
+	return hashedString;
 }
