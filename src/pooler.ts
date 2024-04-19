@@ -1,55 +1,36 @@
 import gsap from "gsap";
 
-export const timelines: {
-	[key: string]: gsap.core.Timeline;
-} = {};
+type Timeline = gsap.core.Timeline;
 
-export function createTimeline(
-	key: string,
-	timelineOptions?: gsap.TimelineVars,
-) {
+const pool = new Set<Timeline>();
+
+function addTimelineToPoolOnceCompleted(timeline: Timeline) {
+	timeline.then(() => {
+		timeline.pause();
+		// Clear as soon as the timeline is finished so animations don't remain on memory
+		timeline.clear();
+		pool.add(timeline);
+	});
+}
+
+export function createTimeline(timelineOptions?: gsap.TimelineVars): Timeline {
 	const newTimeline = gsap.timeline(timelineOptions);
-	newTimeline.paused(true);
-	timelines[key] = newTimeline;
+	newTimeline.pause();
+	addTimelineToPoolOnceCompleted(newTimeline);
 	return newTimeline;
 }
 
-export function useTimeline(
-	key: string,
-	timelineOptions?: gsap.TimelineVars,
-): gsap.core.Timeline {
-	// Here take the timeline from the cache if it exists, otherwise create a new one
-	const timeline: gsap.core.Timeline =
-		timelines[key] ?? createTimeline(key, timelineOptions);
+export function useTimeline(timelineOptions?: gsap.TimelineVars): Timeline {
+	const poolNext = pool.values().next();
 
-	let clearAdded = false;
+	if (poolNext.done) {
+		// Pool is empty
+		return createTimeline(timelineOptions);
+	}
 
-	const handler: ProxyHandler<gsap.core.Timeline> = {
-		get(
-			target: gsap.core.Timeline,
-			prop: PropertyKey,
-			receiver: unknown,
-		): unknown {
-			const origMethod = target[prop as keyof gsap.core.Timeline];
-			if (typeof origMethod === "function") {
-				return (...args: unknown[]) => {
-					if (!clearAdded) {
-						target.clear();
-						clearAdded = true;
-					}
-					const result = origMethod.apply(target, args);
-
-					if (prop === "play") {
-						clearAdded = false;
-					}
-
-					// Ensure the proxy maintains the correct this context
-					return result === target ? receiver : result;
-				};
-			}
-			return origMethod;
-		},
-	};
-
-	return new Proxy(timeline, handler);
+	const timeline = poolNext.value;
+	// Remove from the pool
+	pool.delete(timeline);
+	addTimelineToPoolOnceCompleted(timeline);
+	return timeline;
 }
