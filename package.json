@@ -1,7 +1,7 @@
 {
-	"name": "gsap-timeline-pooler",
-	"version": "0.0.4",
-	"description": "A pooler for handling GSAP Timelines for astro view transitions",
+	"name": "astro-gsap",
+	"version": "0.0.1-beta.1",
+	"description": "A library to use GSAP timelines inside astro with view transitions in a way they can be garbage collected.",
 	"main": "index.ts",
 	"types": "index.ts",
 	"type": "module",
@@ -10,14 +10,14 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/majesticostudio/gsap-timeline-pooler.git"
+		"url": "git+https://github.com/majesticostudio/astro-gsap.git"
 	},
 	"author": "Giulio Zanchetta",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/majesticostudio/gsap-timeline-pooler/issues"
+		"url": "https://github.com/majesticostudio/astro-gsap/issues"
 	},
-	"homepage": "https://github.com/majesticostudio/gsap-timeline-pooler#readme",
+	"homepage": "https://github.com/majesticostudio/astro-gsap#readme",
 	"keywords": ["node.js", "javascript", "npm", "astro", "gsap"],
 	"devDependencies": {
 		"typescript": "^5.4.5"
