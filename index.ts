@@ -14,7 +14,7 @@ document.addEventListener("astro:before-swap", (ev) => {
  * Add the timeline to the pool so the pool can be used later on
  * to kill all the timelines so they can be garbage collected
  */
-class TimelinesRecycler extends gsap.core.Timeline {
+class TimelineRecycler extends gsap.core.Timeline {
 	constructor(vars?: gsap.TimelineVars, time?: number) {
 		super(vars, time);
 		pool.add(this);
@@ -24,7 +24,7 @@ class TimelinesRecycler extends gsap.core.Timeline {
 const gsapExt = {
 	...gsap,
 	timeline: (vars?: gsap.TimelineVars) => {
-		return new TimelinesRecycler(vars);
+		return new TimelineRecycler(vars);
 	},
 };
 
