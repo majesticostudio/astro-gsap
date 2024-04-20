@@ -1,6 +1,6 @@
 {
 	"name": "astro-gsap",
-	"version": "0.0.1-beta.1",
+	"version": "0.0.1-beta.2",
 	"description": "A library to use GSAP timelines inside astro with view transitions in a way they can be garbage collected.",
 	"main": "index.ts",
 	"types": "index.ts",
